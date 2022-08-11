@@ -1,0 +1,140 @@
+---
+title: "Class Notes"
+author: "Erica Dale"
+date: "2022-08-11"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## For loop practice
+
+```{r}
+quarter_splits <- c(1.0, 1.1, 1.2, 1.1, 1.4, 1.5, 1.6, 1.4)
+
+# Return total time for any two consecutive quarter miles (i.e. 1.0 + 1.1)
+for(i in seq_along(quarter_splits)){
+  half_time <- quarter_splits[i] + quarter_splits[i + 1]
+  print(half_time)
+}
+
+# Avoid final NA: While loop is not NA, print this
+  # Or add an if statement
+```
+
+## Intro to Functions
+
+Make a function to double the user input
+
+```{r}
+double_this <- function(your_value) {
+  print(2 * your_value)
+}
+
+double_this(your_value = 5)
+double_this(7)
+
+# Automatically vectorized
+double_this(c(1,2,10,75))
+```
+
+Write function asks for user's NAME and AGE, returns "I'm [NAME] and I'm
+[AGE] years old"
+
+```{r}
+name_age <- function(your_name, your_age) {
+  print(paste("I'm", your_name, "and I'm", your_age, "years old"))
+}
+
+name_age("Brit", 25)
+
+```
+
+## Function documentation
+
+```{r}
+?mean
+?t.test
+```
+
+top: name and {package} Title of function should be descriptive
+Desciption: Usage: structure and required input arguments, default
+settings Arguments: summarize of default and alternatives Value: ideas
+of what output names are in stored list Examples: generally not clear,
+use google instead
+
+## Function with Conditional
+
+Calculate animal age based on human years
+
+```{r}
+convert_animal_age <- function(animal_species, human_years) {
+  if (animal_species == "dog") {
+    print(human_years * 7)
+  } else if (animal_species == "goat") {
+    print(human_years * 4.7)
+  } else
+    print("This animal cannot be calculated")
+}
+
+convert_animal_age(animal_species = "dog", human_years = 12)
+convert_animal_age("goat", 4)
+convert_animal_age("cat", 11)
+```
+
+
+## Function with data wrangling
+Make a data frame
+```{r}
+dog_choice <- tribble(
+  ~dog_name, ~food,
+  "Khora", "everything",
+  "Teddy", "salmon",
+  "Waffle", "pancakes",
+  "Banjo", "chicken"
+)
+view(dog_choice)
+```
+
+Function given a dogs name, pull information from data frame of food preference
+```{r}
+# Create subset so only keep row with dog specified
+dog_menu <- function(input_dog_name) {
+  my_subset <- filter(dog_choice, dog_name == input_dog_name) # Returns row matching
+  print(paste("My name is", my_subset$dog_name, "and my favorite food is", my_subset$food))
+  }
+dog_menu("Waffle")
+
+# OR
+dog_menu2 <- function(input_dog_name) {
+  dog_choice |> 
+  filter(dog_name == input_dog_name)
+  print(paste("My name is", my_subset$dog_name, "and my favorite food is", my_subset$food)) 
+  }
+dog_menu2("Banjo") # DOES NOT WORK, Where did it break
+```
+
+
+## Functions and For Loops
+Function that iterates over data in given df, calculates mean
+
+```{r}
+means_over_columns <- function(df) {
+  for(i in seq_along(df)) {
+    col_mean <- mean(df[[i]], na.rm = TRUE)  # intermediate to hold the calculated data
+    col_name <- colnames(df[i])  # specific function to pull out column names
+    print(paste("The mean value of", col_name, "is", col_mean))
+  }
+}
+
+means_over_columns(df = mtcars)
+means_over_columns(df = faithful)
+# Also can use colmeans, apply, across, plus more as built in functions for this
+```
+
