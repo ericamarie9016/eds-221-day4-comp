@@ -56,7 +56,7 @@ name_age("Brit", 25)
 
 ```
 
-## Function documentation
+### Function documentation
 
 ```{r}
 ?mean
@@ -69,7 +69,7 @@ settings Arguments: summarize of default and alternatives Value: ideas
 of what output names are in stored list Examples: generally not clear,
 use google instead
 
-## Function with Conditional
+### Function with Conditional
 
 Calculate animal age based on human years
 
@@ -89,7 +89,7 @@ convert_animal_age("cat", 11)
 ```
 
 
-## Function with data wrangling
+### Function with data wrangling
 Make a data frame
 ```{r}
 dog_choice <- tribble(
@@ -121,7 +121,7 @@ dog_menu2("Banjo") # DOES NOT WORK, Where did it break
 ```
 
 
-## Functions and For Loops
+### Functions and For Loops
 Function that iterates over data in given df, calculates mean
 
 ```{r}
@@ -136,5 +136,228 @@ means_over_columns <- function(df) {
 means_over_columns(df = mtcars)
 means_over_columns(df = faithful)
 # Also can use colmeans, apply, across, plus more as built in functions for this
+```
+
+
+#### Nested For Loop
+
+```{r}
+plants <- c("orchid", "philodendron", "snake plant")
+rooms <- c("bedroom", "living room", "office", "kitchen")
+
+plant_rooms <- matrix(nrow = length(plants), ncol = length(rooms))
+for (i in seq_along(rooms)) {
+  for(j in seq_along(plants)) {
+  organized_rooms <- print(paste(rooms[i], plants[j]))
+  plant_rooms[j, i] <- organized_rooms
+  }
+}
+plant_rooms
+```
+
+
+## Logistic Growth Equation
+Models population growth as it nears a carrying capacity
+r= growth rate
+K= carrying capacity
+
+#### First with for loop
+1. What do I want? automate estimating population size over a range of times at multiple growth rates (for a constant initial population and carrying capacity)
+Which variables as columns vs rows (time and growth rate)? EITHER is fine, just keep track
+
+2. Outline: Want to write out how I think this could code
+Pseudocode:
+Function logistic_growth, iterate over multiple times for multiple growth rates
+Create empty shell
+Nested for loop over TIME then GROWTH
+
+out_matrix = matrix() # to store output
+for(i in sequence of growth rates) {
+for(j in sequence of times) {
+calc_logistic(for i over all j)
+store calc_population in out_matrix
+}
+}
+
+row = time, column = growth rate
+
+Bare bones function and test:
+```{r}
+logistic_growth <- function(N0, K, r, time) {
+  Nt <- K / (1 + ((K - N0) / N0) * exp(-r * time))
+  print(Nt)
+}
+```
+
+Test it
+```{r}
+time_vec <- seq(from = 0, to = 35, by = 0.1)
+
+pop_35_vec <- vector(mode = "numeric", length = length(time_vec))
+
+for(i in 1:length(time_vec)) {
+  population <- logistic_growth(N0 = 100, K = 6000, r = .27, time = time_vec[i])
+  pop_35_vec <- population
+}
+
+```
+
+Want to apply it wider
+```{r}
+r_seq <- seq(from = .2, to = .4, by = .1)
+time <- (60, 80, 180)
+
+out_matrix <- matrix(nrow = length(time_vec), ncol = length(r_seq))
+
+for (i in 1:length(r_seq)) {
+  for (j in 1:length(time_vec)) {
+    pop <- logistic_growth(N0 = 100, K = 6000, r = r_seq[i], time = time_vec[j])
+    out_matrix[j, i] <- pop
+  }
+}
+
+view(out_matrix)
+# messed up something?
+```
+
+
+## Lotistic growth Function
+Walkthrough in class, properly done (unlike aboves attempt)
+
+```{r}
+# Write out the equation
+K / (1 + ((K - N0) / N0) * exp(-r * time))
+
+# Shortcut ctrl-alt-x
+logistic_growth <- function(K, N0, r, time) {
+  K / (1 + ((K - N0) / N0) * exp(-r * time))
+}
+
+# Test
+logistic_growth(K = 5000, N0 = 100, r = 0.07, time = 42)
+```
+
+Add a time vector to iterate over time
+```{r}
+time_vec <- seq(from = 0, to = 35, by = .1)
+time_vec
+
+pop_35 <- logistic_growth(N0 = 40, K = 4000, r = .4, time = time_vec)
+glimpse(pop_35)
+```
+
+For plotting we want data together (df) instead of separate vectors
+```{r}
+pop_time35_df <- data.frame(time_vec, pop_35)
+# View the data!
+
+ggplot(data = pop_time35_df, aes(x = time_vec, y = pop_35)) +
+  geom_line()
+
+```
+
+
+Let's do this ONE OTHER WAY
+Instead of a vector that it auto-goes over, put it in a for loop
+```{r}
+pop_35_vector <- vector(mode = "numeric", length = length(time_vec))
+
+for (i in seq_along(time_vec)) {
+  population <- logistic_growth(N0 = 100, K = 6000, r = 0.27, time = time_vec[i])
+  pop_35_vector[i] <- population
+}
+```
+
+Now extend this to iterate over multiple growth rates
+```{r}
+r_seq <- seq(from = 0.2, to = 0.4, by = 0.01)
+# Check code chunk in consol
+```
+
+```{r}
+out_m <- matrix(nrow = length(time_vec), ncol = length(r_seq))
+
+# What is highest level iteration? Across the growth rates
+for (i in seq_along(r_seq)) {
+  for (j in seq_along(time_vec)) {
+    pop <- logistic_growth(N0 = 100, K = 1000, r = r_seq[i], time = time_vec[j])
+    out_m[j, i] <- pop
+  }
+}
+```
+
+Now some wrangling of the result data
+1. bind together out matrix with new label column
+2. add description to columns
+
+```{r}
+logistic_df <- data.frame(out_m, time = time_vec) # add time column
+
+#Update column names
+colnames(logistic_df) <- c(paste0("gr_", r_seq), "time")  # time column for last column
+```
+
+BUT NOT IN TIDY DATA STRUCTURE!
+three variables: population (split up over mulitple columns), growth rate (does not have it's own column), and time
+
+```{r}
+logistic_df_long <- logistic_df |> 
+  pivot_longer(cols = -time, values_to = "population", # time is already set
+                names_to = "growth_rate") # keep column names that have growth rates
+```
+
+Now graph it!
+```{r}
+ggplot(data = logistic_df_long, aes(x = time, y = population)) +
+  geom_line()
+# Multiple population values at each time, so high frequency jagged line
+```
+
+Variable to group by:
+```{r}
+ggplot(data = logistic_df_long, aes(x = time, y = population)) +
+  geom_line(aes(color = growth_rate))
+```
+
+
+
+# Warnings and Error Message
+use `warning` to add a warning
+use `stop` to add an error
+
+Collective wind turbine power
+
+$$
+P=0.3\rho A v^3
+$$
+
+rho: air density (kg/ m^3) - 1.225 is at sea level
+A: area covered by turbine (square meters)
+v: wind velocity (m/s)
+result in  watts?
+
+User inputs radius of turbine
+```{r}
+# write it out
+0.3*rho*pi*(radius^2)*(windspeed^3)
+
+# shortcut to create function: highlight and cmd-alt-x
+calc_windpower <- function(rho, radius, windspeed) {
+  
+  #add warnings
+  if (windspeed > 130) {
+    warning("WHOA, that's really fast. Are you sure?")
+  }
+  if (rho > 1.225) {
+    warning("That air density is suspicious.")
+  }
+  if (radius < 0) {
+    stop("Rotor radius must be a positive value in meters.")
+  }
+  
+  0.3*rho*pi*(radius^2)*(windspeed^3)
+}
+
+calc_windpower(1.5, 50, 35)
 ```
 
